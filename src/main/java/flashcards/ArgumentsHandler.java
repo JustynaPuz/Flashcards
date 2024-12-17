@@ -5,40 +5,38 @@
 
 package flashcards;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class CardManager {
+public class ArgumentsHandler {
     private final CardService cardService;
-    private final FileManager fileManager;
+    private final FileReadWriteHandler fileReadWriteHandler;
     private final Logger logger;
     private Path exportPath;
-    private InputManager inputManager;
+    private UserInputController userInputController;
     private boolean running = true;
 
-    public CardManager(String[] args) {
-        this.inputManager = new InputManager();
+    public ArgumentsHandler(String[] args) {
+        this.userInputController = new UserInputController();
         this.cardService = new CardService();
-        this.fileManager = new FileManager(this.cardService);
+        this.fileReadWriteHandler = new FileReadWriteHandler(this.cardService);
         this.logger = new Logger();
         this.readArguments(args);
     }
-    public CardManager(String[] args,InputManager inputManager, CardService cardService, FileManager fileManager, Logger logger) {
-        this.inputManager = inputManager;
+
+    public ArgumentsHandler(String[] args, UserInputController userInputController, CardService cardService, FileReadWriteHandler fileReadWriteHandler, Logger logger) {
+        this.userInputController = userInputController;
         this.cardService = cardService;
-        this.fileManager = fileManager;
+        this.fileReadWriteHandler = fileReadWriteHandler;
         this.logger = logger;
         this.readArguments(args);
     }
 
     public void menu() {
 
-        while(running) {
-            System.out.println("Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):");
-            switch (inputManager.get()) {
+        while (running) {
+            Printer.menu();
+            switch (userInputController.get()) {
                 case "add":
                     this.cardService.addCard();
                     break;
@@ -46,10 +44,10 @@ public class CardManager {
                     this.cardService.removeCard();
                     break;
                 case "import":
-                    this.fileManager.importCards();
+                    this.fileReadWriteHandler.importCards();
                     break;
                 case "export":
-                    this.fileManager.exportCards();
+                    this.fileReadWriteHandler.exportCards();
                     break;
                 case "ask":
                     this.cardService.testCards();
@@ -58,13 +56,13 @@ public class CardManager {
                     System.out.println("Bye bye!");
                     this.logger.stopLogging();
                     if (this.exportPath != null) {
-                        this.exportCards();
+                        fileReadWriteHandler.exportCards();
                     }
                     running = false;
                     break;
                 case "log":
                     System.out.println("File name: ");
-                    Path logPath = Paths.get(inputManager.get());
+                    Path logPath = Paths.get(userInputController.get());
                     this.logger.saveLogToFile(logPath.toString());
                     break;
                 case "hardest card":
@@ -79,10 +77,10 @@ public class CardManager {
     }
 
     private void readArguments(String[] args) {
-        for(int i = 0; i < args.length; ++i) {
+        for (int i = 0; i < args.length; ++i) {
             switch (args[i]) {
                 case "-import":
-                    this.fileManager.importCards();
+                    this.fileReadWriteHandler.importCards();
                     break;
                 case "-export":
                     ++i;
@@ -90,21 +88,5 @@ public class CardManager {
             }
         }
 
-    }
-
-    private void exportCards() {
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(String.valueOf(this.exportPath), true));
-
-            for(Card card : this.cardService.getCards()) {
-                writer.write(card.toString());
-            }
-
-            writer.close();
-        } catch (IOException var4) {
-            System.out.println("Wrong file name");
-        }
-
-        System.out.println(this.cardService.getCards().size() + " cards have been saved.");
     }
 }

@@ -6,19 +6,17 @@
 package flashcards;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Scanner;
-import java.util.stream.Stream;
 
-public class InputManager {
+public class UserInputController {
     private static final Scanner scanner;
 
-    public InputManager() {
+    public UserInputController() {
     }
 
     public String get() {
-        while(true) {
+        while (true) {
             String value = scanner.nextLine();
             if (!value.isEmpty()) {
                 return value;
@@ -30,10 +28,8 @@ public class InputManager {
 
     public Optional<String> getUniqueTerm(List<Card> cards) {
         String term = get();
-        Stream var10000 = cards.stream().map(Card::getTerm);
-        Objects.requireNonNull(term);
-        if (var10000.anyMatch(term::equals)) {
-            System.out.println("The card \"" + term + "\" already exists.");
+        if (cards.stream().map(Card::getTerm).anyMatch(x -> x.equals(term))) {
+            Printer.notUniqueTerm(term);
             return Optional.empty();
         } else {
             return Optional.of(term);
@@ -42,10 +38,8 @@ public class InputManager {
 
     public Optional<String> getUniqueDefinition(List<Card> cards) {
         String definition = get();
-        Stream var10000 = cards.stream().map(Card::getDefinition);
-        Objects.requireNonNull(definition);
-        if (var10000.anyMatch(definition::equals)) {
-            System.out.println("The definition \"" + definition + "\" already exists.");
+        if (cards.stream().map(Card::getDefinition).anyMatch(x -> x.equals(definition))) {
+            Printer.notUniqueDefinition(definition);
             return Optional.empty();
         } else {
             return Optional.of(definition);

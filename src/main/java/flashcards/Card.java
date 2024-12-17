@@ -6,11 +6,14 @@
 package flashcards;
 
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 public class Card {
     private String term;
+    @Setter
     private String definition;
+    @Setter
     private int mistakes;
 
     public Card(String term, String definition) {
@@ -34,12 +37,4 @@ public class Card {
     }
 
 
-    public void setDefinition(String definition) {
-        this.definition = definition;
-    }
-
-
-    public void setMistakes(int mistakes) {
-        this.mistakes = mistakes;
-    }
 }

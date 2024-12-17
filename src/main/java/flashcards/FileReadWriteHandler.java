@@ -15,19 +15,19 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FileManager {
+public class FileReadWriteHandler {
     private final CardService cardService;
-    private InputManager inputManager;
+    private UserInputController userInputController;
 
-    public FileManager(CardService cardService) {
+    public FileReadWriteHandler(CardService cardService) {
 
         this.cardService = cardService;
-        this.inputManager = new InputManager();
+        this.userInputController = new UserInputController();
     }
 
     public void importCards() {
         System.out.println("File name:");
-        Path inputPath = Paths.get(inputManager.get());
+        Path inputPath = Paths.get(userInputController.get());
         int counter = 0;
         List<Card> cards = this.cardService.getCards();
         List<String> lines = new ArrayList();
@@ -40,7 +40,7 @@ public class FileManager {
             System.out.println("File not found.");
         }
 
-        for(String line : lines) {
+        for (String line : lines) {
             System.out.println(line);
             String[] splitLine = line.split(";");
             Card card = new Card(splitLine[0], splitLine[1], Integer.parseInt(splitLine[2]));
@@ -60,12 +60,12 @@ public class FileManager {
 
     public void exportCards() {
         System.out.println("File name:");
-        Path outputPath = Paths.get(inputManager.get());
+        Path outputPath = Paths.get(userInputController.get());
 
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(String.valueOf(outputPath), true));
 
-            for(Card card : this.cardService.getCards()) {
+            for (Card card : this.cardService.getCards()) {
                 writer.write(card.toString());
             }
 
@@ -74,6 +74,8 @@ public class FileManager {
             System.out.println("Wrong file name");
         }
 
-        System.out.println(this.cardService.getCards().size() + " cards have been saved.");
+        Printer.savedCards(this.cardService.getCards().size());
     }
+
+
 }

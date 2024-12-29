@@ -1,6 +1,5 @@
 package flashcards;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,11 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.*;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
@@ -127,5 +122,5 @@ class FileReadWriteHandlerTest {
         assert fileContent.contains("Term2;Definition2;5");
     }
 
-    
+
 }

@@ -3,7 +3,6 @@ package flashcards;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,84 +16,84 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CardManagerTest {
+class argumentsHandlerTest {
     @Mock
     private CardService cardService;
     @Mock
-    private FileManager fileManager;
+    private FileReadWriteHandler fileReadWriteHandler;
     @Mock
     private Logger logger;
     @Mock
-    private InputManager inputManager;
+    private UserInputController userInputController;
 
-    private CardManager cardManager;
+    private ArgumentsHandler argumentsHandler;
 
     @BeforeEach
     void SetUp() {
         String[] args = {};
-        cardManager = new CardManager(args, inputManager, cardService, fileManager, logger);
+        argumentsHandler = new ArgumentsHandler(args, userInputController, cardService, fileReadWriteHandler, logger);
 
     }
 
     @Test
     void testMenuAdd() {
-        when(inputManager.get()).thenReturn("add", "exit");
-        cardManager.menu();
+        when(userInputController.get()).thenReturn("add", "exit");
+        argumentsHandler.menu();
         verify(cardService).addCard();
         verify(logger).stopLogging();
     }
 
     @Test
     void testMenuRemove() {
-        when(inputManager.get()).thenReturn("remove", "exit");
-        cardManager.menu();
+        when(userInputController.get()).thenReturn("remove", "exit");
+        argumentsHandler.menu();
         verify(cardService).removeCard();
         verify(logger).stopLogging();
     }
 
     @Test
     void testMenuImport() {
-        when(inputManager.get()).thenReturn("import", "exit");
-        cardManager.menu();
-        verify(fileManager).importCards();
+        when(userInputController.get()).thenReturn("import", "exit");
+        argumentsHandler.menu();
+        verify(fileReadWriteHandler).importCards();
         verify(logger).stopLogging();
     }
     @Test
     void testMenuExport() {
-        when(inputManager.get()).thenReturn("export", "exit");
-        cardManager.menu();
-        verify(fileManager).exportCards();
+        when(userInputController.get()).thenReturn("export", "exit");
+        argumentsHandler.menu();
+        verify(fileReadWriteHandler).exportCards();
         verify(logger).stopLogging();
     }
 
     @Test
     void testMenuAsk() {
-        when(inputManager.get()).thenReturn("ask", "exit");
-        cardManager.menu();
+        when(userInputController.get()).thenReturn("ask", "exit");
+        argumentsHandler.menu();
         verify(cardService).testCards();
         verify(logger).stopLogging();
     }
 
     @Test
     void testMenuLog() {
-        when(inputManager.get()).thenReturn("log", "exit");
-        cardManager.menu();
+        when(userInputController.get()).thenReturn("log", "exit");
+        argumentsHandler.menu();
         verify(logger).saveLogToFile(Mockito.anyString());
         verify(logger).stopLogging();
     }
 
     @Test
     void testMenuHardestCard() {
-        when(inputManager.get()).thenReturn("hardest card", "exit");
-        cardManager.menu();
+        when(userInputController.get()).thenReturn("hardest card", "exit");
+        argumentsHandler.menu();
         verify(cardService).printHardestCards();
         verify(logger).stopLogging();
     }
 
     @Test
     void testMenuResetStats() {
-        when(inputManager.get()).thenReturn("reset stats", "exit");
-        cardManager.menu();
+        when(userInputController.get()).thenReturn("reset stats", "exit");
+        argumentsHandler.menu();
         verify(cardService).resetStats();
         verify(logger).stopLogging();
     }
@@ -102,22 +101,22 @@ class CardManagerTest {
     @Test
     void testImportInArguments() {
         String[] args = {"-import", "data.txt"};
-        cardManager = new CardManager(args, inputManager, cardService, fileManager, logger);
-        verify(fileManager).importCards();
+        argumentsHandler = new ArgumentsHandler(args, userInputController, cardService, fileReadWriteHandler, logger);
+        verify(fileReadWriteHandler).importCards();
 
     }
 
     @Test
     void testExportInArguments() {
         String[] args = {"-export", "data.txt"};
-        cardManager = new CardManager(args, inputManager, cardService, fileManager, logger);
+        argumentsHandler = new ArgumentsHandler(args, userInputController, cardService, fileReadWriteHandler, logger);
         List<Card> cards = List.of(
                 new Card("term1", "definition1"),
                 new Card("term2", "definition2")
         );
         when(cardService.getCards()).thenReturn(cards);
-        when(inputManager.get()).thenReturn("exit");
-        cardManager.menu();
+        when(userInputController.get()).thenReturn("exit");
+        argumentsHandler.menu();
         File file = new File("data.txt");
         assertTrue(file.exists());
         verify(logger).stopLogging();

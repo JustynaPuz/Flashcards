@@ -1,8 +1,3 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
-
 package flashcards;
 
 import java.io.BufferedReader;
@@ -14,68 +9,80 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 public class FileReadWriteHandler {
-    private final CardService cardService;
-    private UserInputController userInputController;
 
-    public FileReadWriteHandler(CardService cardService) {
+  private final CardService cardService;
+  private UserInputController userInputController;
+  private Printer printer;
 
-        this.cardService = cardService;
-        this.userInputController = new UserInputController();
+  public FileReadWriteHandler(CardService cardService, UserInputController userInputController) {
+    this.cardService = cardService;
+    this.userInputController = userInputController;
+    this.printer = new Printer();
+  }
+
+  public void importCards() {
+    printer.fileName();
+    Path inputPath = Paths.get(userInputController.get());
+    int counter = 0;
+    Set<Card> cards = this.cardService.getCards();
+    List<String> lines = readFileLines(inputPath);
+
+    for (String line : lines) {
+      printer.printString(line);
+      String[] splitLine = line.split(";");
+      if (splitLine.length < 3) {
+        continue;
+      }
+      Card card = new Card(splitLine[0], splitLine[1], Integer.parseInt(splitLine[2]));
+
+      counter += addOrUpdateCard(cards, card);
     }
+    printer.nCardLoaded(counter);
+  }
 
-    public void importCards() {
-        System.out.println("File name:");
-        Path inputPath = Paths.get(userInputController.get());
-        int counter = 0;
-        List<Card> cards = this.cardService.getCards();
-        List<String> lines = new ArrayList();
-
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(String.valueOf(inputPath)));
-            lines = reader.lines().toList();
-            reader.close();
-        } catch (IOException var9) {
-            System.out.println("File not found.");
-        }
-
-        for (String line : lines) {
-            System.out.println(line);
-            String[] splitLine = line.split(";");
-            Card card = new Card(splitLine[0], splitLine[1], Integer.parseInt(splitLine[2]));
-            if (cards.stream().noneMatch((c) -> c.getTerm().equals(card.getTerm()) || c.getDefinition().equals(card.getDefinition()))) {
-                cards.add(card);
-                ++counter;
-            } else if (cards.stream().anyMatch((c) -> c.getTerm().equals(card.getTerm()))) {
-                cards.stream().filter((c) -> c.getTerm().equals(card.getTerm())).forEach((c) -> {
-                    c.setDefinition(card.getDefinition());
-                    c.setMistakes(card.getMistakes());
-                });
-            }
-        }
-
-        System.out.println(counter + " cards have been loaded.");
+  private List<String> readFileLines(Path inputPath) {
+    try (BufferedReader reader = new BufferedReader(new FileReader(inputPath.toFile()))) {
+      return reader.lines().toList();
+    } catch (IOException e) {
+      printer.fileNotFound();
+      return new ArrayList<>();
     }
+  }
 
-    public void exportCards() {
-        System.out.println("File name:");
-        Path outputPath = Paths.get(userInputController.get());
-
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(String.valueOf(outputPath), true));
-
-            for (Card card : this.cardService.getCards()) {
-                writer.write(card.toString());
-            }
-
-            writer.close();
-        } catch (IOException var5) {
-            System.out.println("Wrong file name");
-        }
-
-        Printer.savedCards(this.cardService.getCards().size());
+  private int addOrUpdateCard(Set<Card> cards, Card newCard) {
+    if (cardService.cardWithTermExist(newCard.getTerm())) {
+      cards.removeIf(c -> c.getTerm().equals(newCard.getTerm()));
+      cards.add(newCard);
+      return 0;
+    } else {
+      cards.add(newCard);
+      return 1;
     }
+  }
 
+
+  public void exportCards(Optional<Path> path) {
+    Path outputPath;
+    if (path.isEmpty()) {
+      printer.fileName();
+      outputPath = Paths.get(userInputController.get());
+    } else {
+      outputPath = path.get();
+    }
+    try {
+      BufferedWriter writer = new BufferedWriter(new FileWriter(String.valueOf(outputPath), true));
+      for (Card card : this.cardService.getCards()) {
+        writer.write(card.toString());
+      }
+      writer.close();
+    } catch (IOException e) {
+      printer.wrongFileName();
+    }
+    printer.savedCards(this.cardService.getCards().size());
+  }
 
 }

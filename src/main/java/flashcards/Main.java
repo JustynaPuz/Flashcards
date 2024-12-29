@@ -10,7 +10,7 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        ArgumentsHandler argumentsHandler = new ArgumentsHandler(args);
+        ArgumentsHandler argumentsHandler =ArgumentsHandlerFactory.create(args);
         argumentsHandler.menu();
     }
 }

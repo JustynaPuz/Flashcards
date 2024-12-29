@@ -1,44 +1,33 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
-
 package flashcards;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 public class ArgumentsHandler {
     private final CardService cardService;
     private final FileReadWriteHandler fileReadWriteHandler;
     private final Logger logger;
-    private Path exportPath;
-    private UserInputController userInputController;
+    private Optional<Path> exportPath = Optional.empty();
+    private final UserInputController userInputController;
     private boolean running = true;
-
-    public ArgumentsHandler(String[] args) {
-        this.userInputController = new UserInputController();
-        this.cardService = new CardService();
-        this.fileReadWriteHandler = new FileReadWriteHandler(this.cardService);
-        this.logger = new Logger();
-        this.readArguments(args);
-    }
+    private final Printer printer;
 
     public ArgumentsHandler(String[] args, UserInputController userInputController, CardService cardService, FileReadWriteHandler fileReadWriteHandler, Logger logger) {
         this.userInputController = userInputController;
         this.cardService = cardService;
         this.fileReadWriteHandler = fileReadWriteHandler;
         this.logger = logger;
+        this.printer = new Printer();
         this.readArguments(args);
     }
 
     public void menu() {
-
         while (running) {
-            Printer.menu();
+            printer.menu();
             switch (userInputController.get()) {
                 case "add":
-                    this.cardService.addCard();
+                    this.cardService.tryToAddNewCard();
                     break;
                 case "remove":
                     this.cardService.removeCard();
@@ -47,23 +36,16 @@ public class ArgumentsHandler {
                     this.fileReadWriteHandler.importCards();
                     break;
                 case "export":
-                    this.fileReadWriteHandler.exportCards();
+                    this.fileReadWriteHandler.exportCards(Optional.empty());
                     break;
                 case "ask":
                     this.cardService.testCards();
                     break;
                 case "exit":
-                    System.out.println("Bye bye!");
-                    this.logger.stopLogging();
-                    if (this.exportPath != null) {
-                        fileReadWriteHandler.exportCards();
-                    }
-                    running = false;
+                    exit();
                     break;
                 case "log":
-                    System.out.println("File name: ");
-                    Path logPath = Paths.get(userInputController.get());
-                    this.logger.saveLogToFile(logPath.toString());
+                    log();
                     break;
                 case "hardest card":
                     this.cardService.printHardestCards();
@@ -71,9 +53,23 @@ public class ArgumentsHandler {
                 case "reset stats":
                     this.cardService.resetStats();
             }
-
-            System.out.println();
+            printer.blankLine();
         }
+    }
+
+    private void log() {
+        printer.fileName();
+        Path logPath = Paths.get(userInputController.get());
+        this.logger.saveLogToFile(logPath.toString());
+    }
+
+    private void exit() {
+        printer.bye();
+        this.logger.stopLogging();
+        if (this.exportPath.isPresent()) {
+            fileReadWriteHandler.exportCards(exportPath);
+        }
+        running = false;
     }
 
     private void readArguments(String[] args) {
@@ -84,9 +80,8 @@ public class ArgumentsHandler {
                     break;
                 case "-export":
                     ++i;
-                    this.exportPath = Paths.get(args[i]);
+                    this.exportPath = Optional.of(Paths.get(args[i]));
             }
         }
-
     }
 }

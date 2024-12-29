@@ -1,98 +1,115 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
-
 package flashcards;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
 import lombok.Getter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class CardService {
-    @Getter
-    private final List<Card> cards = new ArrayList<>();
-    private final UserInputController userInputController;
 
-    public CardService() {
-        userInputController = new UserInputController();
+  @Getter
+  private final Set<Card> cards = new LinkedHashSet<>();
+  private final UserInputController userInputController;
+  private final Printer printer;
+
+  public CardService(UserInputController userInputController, Printer printer) {
+    this.userInputController = userInputController;
+    this.printer = printer;
+  }
+
+  public void tryToAddNewCard() {
+    printer.theCard();
+    String term = userInputController.get();
+
+    if (!cardWithTermExist(term)) {
+      printer.theDefinitionOfCard();
+      String definition = userInputController.get();
+      if (!cardWithDefinitionExist(definition)) {
+        this.cards.add(new Card(term, definition));
+        printer.addCardSuccess(term, definition);
+      } else {
+        printer.notUniqueDefinition(definition);
+      }
+    } else {
+      printer.notUniqueTerm(term);
+    }
+  }
+
+  public boolean cardWithTermExist(String term) {
+    return cards.stream().map(Card::getTerm).anyMatch(x -> x.equals(term));
+  }
+
+  public boolean cardWithDefinitionExist(String definition) {
+    return cards.stream().map(Card::getDefinition).anyMatch(x -> x.equals(definition));
+  }
+
+  public void removeCard() {
+    printer.whichCard();
+    String term = userInputController.get();
+    if (cardWithTermExist(term)) {
+      Optional<Card> cardToRemove = this.cards.stream().filter((c) -> c.getTerm().equals(term))
+          .findFirst();
+      this.cards.remove(cardToRemove.get());
+      printer.removeCardSuccess();
+    } else {
+      printer.removeCardFail(term);
+    }
+  }
+
+  public void testCards() {
+    printer.howManyTimesToAsk();
+    int number;
+    try {
+      number = Integer.parseInt(userInputController.get());
+    } catch (NumberFormatException e) {
+      printer.wrongInput();
+      return;
     }
 
-    public void addCard() {
-        System.out.println("The card:");
-        Optional<String> term = userInputController.getUniqueTerm(this.cards);
-        if (term.isPresent()) {
-            System.out.println("The definition of the card:");
-            Optional<String> definition = userInputController.getUniqueDefinition(this.cards);
-            if (definition.isPresent()) {
-                this.cards.add(new Card(term.get(), definition.get()));
-                Printer.addCardSuccess(term.get(), definition.get());
-            }
-        }
+    List<Card> cardsToTest = cards.stream().limit(number).toList();
+
+    for (int i = 0; i < number; i++) {
+      printer.printCardDefinitionOf(cardsToTest.get(i).getTerm());
+      String userAnswer = userInputController.get();
+      if (this.checkAnswer(userAnswer, cardsToTest.get(i))) {
+        printer.correct();
+      }
     }
+  }
 
-    public void removeCard() {
-        System.out.println("Which card?");
-        String term = userInputController.get();
-        Optional<Card> cardToRemove = this.cards.stream().filter((c) -> c.getTerm().equals(term)).findFirst();
-        if (cardToRemove.isPresent()) {
-            this.cards.remove(cardToRemove.get());
-            Printer.removeCardSuccess();
-        } else {
-            Printer.removeCardFail(term);
-        }
-
+  private boolean checkAnswer(String answer, Card card) {
+    if (card.getDefinition().equals(answer)) {
+      return true;
+    } else {
+      card.increaseMistakesCount();
+      if (cardWithDefinitionExist(answer)) {
+        Card guessedCard = this.cards.stream().filter((c) -> c.getDefinition().equals(answer))
+            .findFirst().get();
+        printer.rightAnswerForAnotherCard(card.getDefinition(), guessedCard.getTerm());
+      } else {
+        printer.wrongAnswer(card.getDefinition());
+      }
+      return false;
     }
+  }
 
-    public void testCards() {
-        System.out.println("How many times to ask?");
-        int number = Integer.parseInt(userInputController.get());
-
-        for (int i = 0; i < number; ++i) {
-            Card card = this.cards.get(i);
-            Printer.printCardDefinition(card.getTerm());
-            String userAnswer = userInputController.get();
-            if (this.checkAnswer(userAnswer, this.cards.get(i))) {
-                System.out.println("Correct!");
-            }
-        }
-
+  public void printHardestCards() {
+    int max = this.cards.stream().mapToInt(Card::getMistakes).max().orElse(0);
+    List<Card> hardestCards = this.cards.stream().filter((c) -> c.getMistakes() == max).toList();
+    if (hardestCards.size() == 1) {
+      printer.oneHardestCard(hardestCards.get(0));
+    } else if (!hardestCards.isEmpty() && max != 0) {
+      printer.hardestCards(hardestCards);
+    } else {
+      printer.noCardsWithErrors();
     }
+  }
 
-    private boolean checkAnswer(String answer, Card card) {
-        if (card.getDefinition().equals(answer)) {
-            return true;
-        } else {
-            card.addMistake();
-            if (this.cards.stream().map(Card::getDefinition).anyMatch(x -> x.equals(answer))) {
-                Card guessedCard = this.cards.stream().filter((c) -> c.getDefinition().equals(answer)).findFirst().get();
-                Printer.rightAnswerForAnotherCard(card.getDefinition(), guessedCard.getTerm());
-            } else {
-                Printer.wrongAnswer(card.getDefinition());
-            }
-
-            return false;
-        }
-    }
-
-    public void printHardestCards() {
-        int max = this.cards.stream().mapToInt(Card::getMistakes).max().orElse(0);
-        List<Card> hardestCards = this.cards.stream().filter((c) -> c.getMistakes() == max).toList();
-        if (hardestCards.size() == 1) {
-            Printer.oneHardestCard(hardestCards.get(0));
-        } else if (!hardestCards.isEmpty() && max != 0) {
-            Printer.hardestCards(hardestCards);
-        } else {
-            Printer.noCardsWithErrors();
-        }
-
-    }
-
-    public void resetStats() {
-        this.cards.forEach((card) -> card.setMistakes(0));
-        Printer.resetStats();
-    }
+  public void resetStats() {
+    this.cards.forEach((card) -> card.setMistakes(0));
+    printer.resetStats();
+  }
 
 }

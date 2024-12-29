@@ -1,14 +1,19 @@
 package flashcards;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.*;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,7 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class argumentsHandlerTest {
+class ArgumentsHandlerTest {
     @Mock
     private CardService cardService;
     @Mock
@@ -25,6 +30,8 @@ class argumentsHandlerTest {
     private Logger logger;
     @Mock
     private UserInputController userInputController;
+    @TempDir
+    Path tempDir;
 
     private ArgumentsHandler argumentsHandler;
 
@@ -39,7 +46,7 @@ class argumentsHandlerTest {
     void testMenuAdd() {
         when(userInputController.get()).thenReturn("add", "exit");
         argumentsHandler.menu();
-        verify(cardService).addCard();
+        verify(cardService).tryToAddNewCard();
         verify(logger).stopLogging();
     }
 
@@ -62,7 +69,7 @@ class argumentsHandlerTest {
     void testMenuExport() {
         when(userInputController.get()).thenReturn("export", "exit");
         argumentsHandler.menu();
-        verify(fileReadWriteHandler).exportCards();
+        verify(fileReadWriteHandler).exportCards(Optional.empty());
         verify(logger).stopLogging();
     }
 
@@ -108,28 +115,14 @@ class argumentsHandlerTest {
 
     @Test
     void testExportInArguments() {
-        String[] args = {"-export", "data.txt"};
+
+        Optional<Path> exportPath = Optional.of(Paths.get("data.txt"));
+        String[] args = {"-export", String.valueOf(exportPath.get())};
+
         argumentsHandler = new ArgumentsHandler(args, userInputController, cardService, fileReadWriteHandler, logger);
-        List<Card> cards = List.of(
-                new Card("term1", "definition1"),
-                new Card("term2", "definition2")
-        );
-        when(cardService.getCards()).thenReturn(cards);
         when(userInputController.get()).thenReturn("exit");
         argumentsHandler.menu();
-        File file = new File("data.txt");
-        assertTrue(file.exists());
-        verify(logger).stopLogging();
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String content = reader.lines().collect(Collectors.joining("\n"));
-            assertTrue(content.contains("term1;definition1;0"));
-            assertTrue(content.contains("term2;definition2;0"));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        file.delete();
+        verify(fileReadWriteHandler).exportCards(exportPath);
 
     }
 
